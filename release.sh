@@ -65,7 +65,7 @@ fi
 
 # Executar testes (se existirem)
 echo "🧪 Executando testes..."
-if ! yarn test; then
+if ! yarn test --passWithNoTests; then
     echo "❌ Erro: Testes falharam. Release cancelado."
     exit 1
 fi
