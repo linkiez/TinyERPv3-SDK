@@ -1,0 +1,44 @@
+#!/bin/bash
+
+echo "📋 Capturando arquivos em stage..."
+staged_files=$(git diff --cached --name-only)
+if [ -z "$staged_files" ]; then
+    echo "⚠️  Nenhum arquivo em stage encontrado!"
+    exit 0
+fi
+echo "✅ Arquivos em stage capturados!"
+
+echo ""
+echo "🎨 Executando Prettier para formatar o código..."
+if ! yarn prettier; then
+    echo "❌ ERRO: Prettier falhou ao formatar o código!"
+    echo "   Verifique se há erros de sintaxe nos arquivos."
+    echo "   Execute 'yarn prettier' manualmente para mais detalhes."
+    exit 1
+fi
+echo "✅ Prettier executado com sucesso!"
+
+echo ""
+echo "📝 Adicionando alterações do Prettier aos arquivos que estavam em stage..."
+# Add only the files that were previously staged and might have been modified by Prettier
+echo "$staged_files" | while IFS= read -r file; do
+    if [ -f "$file" ] && git diff --name-only | grep -Fx "$file" > /dev/null; then
+        git add "$file"
+        echo "   ✓ $file adicionado"
+    fi
+done
+echo "✅ Alterações adicionadas ao commit!"
+
+# echo ""
+# echo "🧪 Executando testes unitários..."
+# if ! yarn test; then
+#     echo "❌ ERRO: Testes falharam!"
+#     echo "   Um ou mais testes não passaram."
+#     echo "   Execute 'yarn test' para ver detalhes dos testes que falharam."
+#     echo "   Corrija os testes antes de fazer o commit."
+#     exit 1
+# fi
+# echo "✅ Todos os testes passaram!"
+
+echo ""
+echo "🎉 Pre-commit finalizado com sucesso! Prosseguindo com o commit..."
