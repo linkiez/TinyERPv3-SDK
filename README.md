@@ -1,4 +1,8 @@
-# TinyERP V3 SDK - Guia de Utilização
+# TinyERP V3 SDK
+
+[![semantic-release: angular](https://img.shields.io/badge/semantic--release-angular-e10079?logo=semantic-release)](https://github.com/semantic-release/semantic-release)
+[![GitHub release](https://img.shields.io/github/release/linkiez/TinyERPv3-SDK.svg)](https://github.com/linkiez/TinyERPv3-SDK/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 SDK TypeScript para integração com a API V3 do TinyERP.
 

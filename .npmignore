@@ -13,3 +13,6 @@ esbuild.config.js
 yarn.lock
 .git
 .husky
+.releaserc.json
+.github
+CHANGELOG.md
