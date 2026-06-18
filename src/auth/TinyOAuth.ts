@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 /**
  * Configuration required to instantiate the OAuth flow.
  */
@@ -79,8 +77,7 @@ export class TinyOAuth {
    * @param code The code received in the redirect URI callback.
    */
   async exchangeCode(code: string): Promise<TinyTokenSet> {
-    const response = await axios.post<Record<string, unknown>>(
-      `${OAUTH_BASE}/token`,
+    return this.postToken(
       new URLSearchParams({
         grant_type: 'authorization_code',
         client_id: this.config.clientId,
@@ -88,9 +85,7 @@ export class TinyOAuth {
         redirect_uri: this.config.redirectUri,
         code,
       }),
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
     );
-    return this.parseTokenResponse(response.data);
   }
 
   /**
@@ -98,17 +93,14 @@ export class TinyOAuth {
    * @param refreshToken The refresh token from a previous token set.
    */
   async refreshAccessToken(refreshToken: string): Promise<TinyTokenSet> {
-    const response = await axios.post<Record<string, unknown>>(
-      `${OAUTH_BASE}/token`,
+    return this.postToken(
       new URLSearchParams({
         grant_type: 'refresh_token',
         client_id: this.config.clientId,
         client_secret: this.config.clientSecret,
         refresh_token: refreshToken,
       }),
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
     );
-    return this.parseTokenResponse(response.data);
   }
 
   /**
@@ -142,15 +134,29 @@ export class TinyOAuth {
     };
   }
 
+  private async postToken(body: URLSearchParams): Promise<TinyTokenSet> {
+    const response = await fetch(`${OAUTH_BASE}/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      throw new Error(`TinyOAuth token request failed: ${response.status} ${text}`);
+    }
+    const data = (await response.json()) as Record<string, unknown>;
+    return this.parseTokenResponse(data);
+  }
+
   private parseTokenResponse(data: Record<string, unknown>): TinyTokenSet {
     const expiresIn = typeof data['expires_in'] === 'number' ? data['expires_in'] : undefined;
 
     return {
-      access_token: String(data['access_token'] ?? ''),
+      access_token: typeof data['access_token'] === 'string' ? data['access_token'] : '',
       refresh_token: typeof data['refresh_token'] === 'string' ? data['refresh_token'] : undefined,
       token_type: typeof data['token_type'] === 'string' ? data['token_type'] : undefined,
       scope: typeof data['scope'] === 'string' ? data['scope'] : undefined,
-      expires_at: expiresIn !== undefined ? Date.now() + expiresIn * 1000 : undefined,
+      expires_at: expiresIn === undefined ? undefined : Date.now() + expiresIn * 1000,
     };
   }
 }
