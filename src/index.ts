@@ -1,9 +1,11 @@
+export * from './auth';
 export * from './core';
 export * from './models';
 export * from './services';
 
-import type { OpenAPIConfig } from './core/OpenAPI';
 import { OpenAPI } from './core/OpenAPI';
+import { RateLimiter } from './core/RateLimiter';
+import { TinyOAuth, type TinyOAuthConfig, type TinyTokenSet } from './auth/TinyOAuth';
 import { CategoriasDeReceitaEDespesaService } from './services/CategoriasDeReceitaEDespesaService';
 import { CategoriasService } from './services/CategoriasService';
 import { ContasAPagarService } from './services/ContasAPagarService';
@@ -27,12 +29,53 @@ import { ServiOsService } from './services/ServiOsService';
 import { VendedoresService } from './services/VendedoresService';
 
 /**
- * @class TinyERP
+ * Options for initializing TinyERPv3.
+ * Accepts either a plain access token or a full OAuth configuration.
+ */
+export type TinyERPConfig =
+  | {
+      /** Plain Bearer token (static or callback). */
+      TOKEN: string | (() => Promise<string>);
+      oauth?: never;
+      /** Initial token set when using OAuth. Use with `oauth` field. */
+      tokenSet?: never;
+      /** Rate limit ceiling (req/min). Defaults to 120. Pass 0 to disable. */
+      rateLimit?: number;
+      /** Callback invoked whenever the token set is refreshed via OAuth. */
+      onTokenRefresh?: never;
+    }
+  | {
+      TOKEN?: never;
+      /** OAuth application credentials. */
+      oauth: TinyOAuthConfig;
+      /** Initial token set obtained after the OAuth code exchange. */
+      tokenSet: TinyTokenSet;
+      /** Rate limit ceiling (req/min). Defaults to 120. Pass 0 to disable. */
+      rateLimit?: number;
+      /** Callback invoked whenever the token set is refreshed. */
+      onTokenRefresh?: (updated: TinyTokenSet) => void;
+    };
+
+/**
+ * @class TinyERPv3
  * @description Master class to initialize and access all TinyERP V3 API services.
- * @example
+ * Supports plain token, OAuth 2.0 auto-refresh, and built-in rate limiting.
+ *
+ * @example — plain token
  * ```typescript
- * const tiny = new TinyERP({ TOKEN: 'YOUR_API_TOKEN' });
- * const produtos = await tiny.produtos.obterProduto({ id: 123 });
+ * const tiny = new TinyERPv3({ TOKEN: process.env.TINY_TOKEN! });
+ * ```
+ *
+ * @example — OAuth with auto-refresh
+ * ```typescript
+ * const oauth = new TinyOAuth({ clientId: '...', clientSecret: '...', redirectUri: '...' });
+ * const tokenSet = await oauth.exchangeCode(codeFromCallback);
+ * const tiny = new TinyERPv3({
+ *   oauth,
+ *   tokenSet,
+ *   onTokenRefresh: (ts) => saveTokenSet(ts),
+ *   rateLimit: 120,
+ * });
  * ```
  */
 export class TinyERPv3 {
@@ -60,11 +103,26 @@ export class TinyERPv3 {
 
   /**
    * Initializes the TinyERP API services.
-   * @param {OpenAPIConfig} config - The configuration for the API, usually the token.
+   * @param config - Token config, OAuth config, or rate limit options.
    */
-  constructor(config: OpenAPIConfig) {
-    OpenAPI.TOKEN = config.TOKEN;
-    OpenAPI.BASE = config.BASE || 'https://api.tiny.com.br/api/v3';
+  constructor(config: TinyERPConfig) {
+    OpenAPI.BASE = 'https://api.tiny.com.br/api/v3';
+
+    // Rate limiter setup — disabled when rateLimit === 0.
+    if (config.rateLimit !== 0) {
+      OpenAPI.RATE_LIMITER = new RateLimiter(config.rateLimit ?? 120);
+    }
+
+    // Token resolver — plain token or OAuth auto-refresh.
+    if (config.oauth && config.tokenSet) {
+      const oauthClient = new TinyOAuth(config.oauth);
+      OpenAPI.TOKEN = oauthClient.createTokenResolver(
+        config.tokenSet,
+        config.onTokenRefresh,
+      ) as () => Promise<string>;
+    } else if (config.TOKEN) {
+      OpenAPI.TOKEN = config.TOKEN;
+    }
 
     this.categorias = CategoriasService;
     this.categoriasDeReceitaEDespesa = CategoriasDeReceitaEDespesaService;

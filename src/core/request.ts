@@ -315,6 +315,11 @@ export const request = <T>(
 ): CancelablePromise<T> => {
   return new CancelablePromise(async (resolve, reject, onCancel) => {
     try {
+      // Apply rate limiting before sending the request.
+      if (config.RATE_LIMITER) {
+        await config.RATE_LIMITER.waitIfNeeded();
+      }
+
       const url = getUrl(config, options);
       const formData = getFormData(options);
       const body = getRequestBody(options);
@@ -331,6 +336,12 @@ export const request = <T>(
           onCancel,
           axiosClient,
         );
+
+        // Record the request and update limit ceiling from response headers.
+        if (config.RATE_LIMITER) {
+          config.RATE_LIMITER.recordRequest(response.headers as Record<string, string | undefined>);
+        }
+
         const responseBody = getResponseBody(response);
         const responseHeader = getResponseHeader(response, options.responseHeader);
 
