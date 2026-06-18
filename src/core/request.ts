@@ -1,11 +1,3 @@
-/* generated using openapi-typescript-codegen -- do not edit */
-/* istanbul ignore file */
-/* tslint:disable */
-/* eslint-disable */
-import axios from 'axios';
-import type { AxiosError, AxiosRequestConfig, AxiosResponse, AxiosInstance } from 'axios';
-import FormData from 'form-data';
-
 import { ApiError } from './ApiError';
 import type { ApiRequestOptions } from './ApiRequestOptions';
 import type { ApiResult } from './ApiResult';
@@ -19,28 +11,19 @@ export const isDefined = <T>(
   return value !== undefined && value !== null;
 };
 
-export const isString = (value: any): value is string => {
+export const isString = (value: unknown): value is string => {
   return typeof value === 'string';
 };
 
-export const isStringWithValue = (value: any): value is string => {
+export const isStringWithValue = (value: unknown): value is string => {
   return isString(value) && value !== '';
 };
 
-export const isBlob = (value: any): value is Blob => {
-  return (
-    typeof value === 'object' &&
-    typeof value.type === 'string' &&
-    typeof value.stream === 'function' &&
-    typeof value.arrayBuffer === 'function' &&
-    typeof value.constructor === 'function' &&
-    typeof value.constructor.name === 'string' &&
-    /^(Blob|File)$/.test(value.constructor.name) &&
-    /^(Blob|File)$/.test(value[Symbol.toStringTag])
-  );
+export const isBlob = (value: unknown): value is Blob => {
+  return value instanceof Blob;
 };
 
-export const isFormData = (value: any): value is FormData => {
+export const isFormData = (value: unknown): value is FormData => {
   return value instanceof FormData;
 };
 
@@ -51,27 +34,26 @@ export const isSuccess = (status: number): boolean => {
 export const base64 = (str: string): string => {
   try {
     return btoa(str);
-  } catch (err) {
-    // @ts-ignore
+  } catch {
     return Buffer.from(str).toString('base64');
   }
 };
 
-export const getQueryString = (params: Record<string, any>): string => {
+export const getQueryString = (params: Record<string, unknown>): string => {
   const qs: string[] = [];
 
-  const append = (key: string, value: any) => {
+  const append = (key: string, value: unknown) => {
     qs.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
   };
 
-  const process = (key: string, value: any) => {
+  const process = (key: string, value: unknown) => {
     if (isDefined(value)) {
       if (Array.isArray(value)) {
         value.forEach((v) => {
           process(key, v);
         });
       } else if (typeof value === 'object') {
-        Object.entries(value).forEach(([k, v]) => {
+        Object.entries(value as Record<string, unknown>).forEach(([k, v]) => {
           process(`${key}[${k}]`, v);
         });
       } else {
@@ -92,13 +74,13 @@ export const getQueryString = (params: Record<string, any>): string => {
 };
 
 const getUrl = (config: OpenAPIConfig, options: ApiRequestOptions): string => {
-  const encoder = config.ENCODE_PATH || encodeURI;
+  const encoder = config.ENCODE_PATH ?? encodeURI;
 
   const path = options.url
     .replace('{api-version}', config.VERSION)
     .replace(/{(.*?)}/g, (substring: string, group: string) => {
-      if (options.path?.hasOwnProperty(group)) {
-        return encoder(String(options.path[group]));
+      if (Object.prototype.hasOwnProperty.call(options.path ?? {}, group)) {
+        return encoder(String((options.path as Record<string, unknown>)[group]));
       }
       return substring;
     });
@@ -114,16 +96,16 @@ export const getFormData = (options: ApiRequestOptions): FormData | undefined =>
   if (options.formData) {
     const formData = new FormData();
 
-    const process = (key: string, value: any) => {
+    const process = (key: string, value: unknown) => {
       if (isString(value) || isBlob(value)) {
-        formData.append(key, value);
+        formData.append(key, value as string | Blob);
       } else {
         formData.append(key, JSON.stringify(value));
       }
     };
 
     Object.entries(options.formData)
-      .filter(([_, value]) => isDefined(value))
+      .filter(([, value]) => isDefined(value))
       .forEach(([key, value]) => {
         if (Array.isArray(value)) {
           value.forEach((v) => process(key, v));
@@ -152,7 +134,6 @@ export const resolve = async <T>(
 export const getHeaders = async (
   config: OpenAPIConfig,
   options: ApiRequestOptions,
-  formData?: FormData,
 ): Promise<Record<string, string>> => {
   const [token, username, password, additionalHeaders] = await Promise.all([
     resolve(options, config.TOKEN),
@@ -161,20 +142,14 @@ export const getHeaders = async (
     resolve(options, config.HEADERS),
   ]);
 
-  const formHeaders = (typeof formData?.getHeaders === 'function' && formData?.getHeaders()) || {};
-
   const headers = Object.entries({
     Accept: 'application/json',
     ...additionalHeaders,
     ...options.headers,
-    ...formHeaders,
   })
-    .filter(([_, value]) => isDefined(value))
+    .filter(([, value]) => isDefined(value))
     .reduce(
-      (headers, [key, value]) => ({
-        ...headers,
-        [key]: String(value),
-      }),
+      (acc, [key, value]) => ({ ...acc, [key]: String(value) }),
       {} as Record<string, string>,
     );
 
@@ -183,15 +158,14 @@ export const getHeaders = async (
   }
 
   if (isStringWithValue(username) && isStringWithValue(password)) {
-    const credentials = base64(`${username}:${password}`);
-    headers['Authorization'] = `Basic ${credentials}`;
+    headers['Authorization'] = `Basic ${base64(`${username}:${password}`)}`;
   }
 
   if (options.body !== undefined) {
     if (options.mediaType) {
       headers['Content-Type'] = options.mediaType;
     } else if (isBlob(options.body)) {
-      headers['Content-Type'] = options.body.type || 'application/octet-stream';
+      headers['Content-Type'] = (options.body as Blob).type || 'application/octet-stream';
     } else if (isString(options.body)) {
       headers['Content-Type'] = 'text/plain';
     } else if (!isFormData(options.body)) {
@@ -202,54 +176,80 @@ export const getHeaders = async (
   return headers;
 };
 
-export const getRequestBody = (options: ApiRequestOptions): any => {
-  if (options.body) {
-    return options.body;
-  }
-  return undefined;
+export const getRequestBody = (options: ApiRequestOptions): unknown => {
+  return options.body;
+};
+
+type FetchResult<T> = {
+  status: number;
+  statusText: string;
+  headers: Record<string, string>;
+  data: T;
 };
 
 export const sendRequest = async <T>(
   config: OpenAPIConfig,
   options: ApiRequestOptions,
   url: string,
-  body: any,
+  body: unknown,
   formData: FormData | undefined,
   headers: Record<string, string>,
   onCancel: OnCancel,
-  axiosClient: AxiosInstance,
-): Promise<AxiosResponse<T>> => {
-  const source = axios.CancelToken.source();
+): Promise<FetchResult<T>> => {
+  const controller = new AbortController();
+  onCancel(() => controller.abort());
 
-  const requestConfig: AxiosRequestConfig = {
-    url,
-    headers,
-    data: body ?? formData,
-    method: options.method,
-    withCredentials: config.WITH_CREDENTIALS,
-    withXSRFToken: config.CREDENTIALS === 'include' ? config.WITH_CREDENTIALS : false,
-    cancelToken: source.token,
-  };
-
-  onCancel(() => source.cancel('The user aborted a request.'));
-
-  try {
-    return await axiosClient.request(requestConfig);
-  } catch (error) {
-    const axiosError = error as AxiosError<T>;
-    if (axiosError.response) {
-      return axiosError.response;
-    }
-    throw error;
+  const headersInit = { ...headers };
+  if (formData) {
+    delete headersInit['Content-Type'];
   }
+
+  let fetchBody: BodyInit | undefined;
+  if (formData) {
+    fetchBody = formData;
+  } else if (body !== undefined) {
+    fetchBody = isString(body) ? (body as string) : JSON.stringify(body);
+  }
+
+  const response = await fetch(url, {
+    method: options.method,
+    headers: headersInit,
+    body: fetchBody,
+    credentials: config.WITH_CREDENTIALS ? 'include' : 'omit',
+    signal: controller.signal,
+  });
+
+  const responseHeaders: Record<string, string> = {};
+  response.headers.forEach((value, key) => {
+    responseHeaders[key] = value;
+  });
+
+  let data: T;
+  if (response.status === 204) {
+    data = undefined as unknown as T;
+  } else {
+    const contentType = response.headers.get('content-type') ?? '';
+    if (contentType.includes('application/json')) {
+      data = (await response.json()) as T;
+    } else {
+      data = (await response.text()) as unknown as T;
+    }
+  }
+
+  return {
+    status: response.status,
+    statusText: response.statusText,
+    headers: responseHeaders,
+    data,
+  };
 };
 
 export const getResponseHeader = (
-  response: AxiosResponse<any>,
+  response: FetchResult<unknown>,
   responseHeader?: string,
 ): string | undefined => {
   if (responseHeader) {
-    const content = response.headers[responseHeader];
+    const content = response.headers[responseHeader.toLowerCase()];
     if (isString(content)) {
       return content;
     }
@@ -257,7 +257,7 @@ export const getResponseHeader = (
   return undefined;
 };
 
-export const getResponseBody = (response: AxiosResponse<any>): any => {
+export const getResponseBody = <T>(response: FetchResult<T>): T | undefined => {
   if (response.status !== 204) {
     return response.data;
   }
@@ -282,12 +282,10 @@ export const catchErrorCodes = (options: ApiRequestOptions, result: ApiResult): 
   }
 
   if (!result.ok) {
-    const errorStatus = result.status ?? 'unknown';
-    const errorStatusText = result.statusText ?? 'unknown';
     const errorBody = (() => {
       try {
         return JSON.stringify(result.body, null, 2);
-      } catch (e) {
+      } catch {
         return undefined;
       }
     })();
@@ -295,7 +293,7 @@ export const catchErrorCodes = (options: ApiRequestOptions, result: ApiResult): 
     throw new ApiError(
       options,
       result,
-      `Generic Error: status: ${errorStatus}; status text: ${errorStatusText}; body: ${errorBody}`,
+      `Generic Error: status: ${result.status ?? 'unknown'}; status text: ${result.statusText ?? 'unknown'}; body: ${errorBody}`,
     );
   }
 };
@@ -304,18 +302,15 @@ export const catchErrorCodes = (options: ApiRequestOptions, result: ApiResult): 
  * Request method
  * @param config The OpenAPI configuration object
  * @param options The request options from the service
- * @param axiosClient The axios client instance to use
  * @returns CancelablePromise<T>
  * @throws ApiError
  */
 export const request = <T>(
   config: OpenAPIConfig,
   options: ApiRequestOptions,
-  axiosClient: AxiosInstance = axios,
 ): CancelablePromise<T> => {
   return new CancelablePromise(async (resolve, reject, onCancel) => {
     try {
-      // Apply rate limiting before sending the request.
       if (config.RATE_LIMITER) {
         await config.RATE_LIMITER.waitIfNeeded();
       }
@@ -323,7 +318,7 @@ export const request = <T>(
       const url = getUrl(config, options);
       const formData = getFormData(options);
       const body = getRequestBody(options);
-      const headers = await getHeaders(config, options, formData);
+      const headers = await getHeaders(config, options);
 
       if (!onCancel.isCancelled) {
         const response = await sendRequest<T>(
@@ -334,12 +329,10 @@ export const request = <T>(
           formData,
           headers,
           onCancel,
-          axiosClient,
         );
 
-        // Record the request and update limit ceiling from response headers.
         if (config.RATE_LIMITER) {
-          config.RATE_LIMITER.recordRequest(response.headers as Record<string, string | undefined>);
+          config.RATE_LIMITER.recordRequest(response.headers);
         }
 
         const responseBody = getResponseBody(response);
