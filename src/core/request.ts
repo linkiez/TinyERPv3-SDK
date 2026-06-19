@@ -196,6 +196,8 @@ export const sendRequest = async <T>(
   headers: Record<string, string>,
   onCancel: OnCancel,
 ): Promise<FetchResult<T>> => {
+  type FetchBody = NonNullable<Parameters<typeof fetch>[1]>['body'];
+
   const controller = new AbortController();
   onCancel(() => controller.abort());
 
@@ -204,11 +206,11 @@ export const sendRequest = async <T>(
     delete headersInit['Content-Type'];
   }
 
-  let fetchBody: BodyInit | undefined;
+  let fetchBody: FetchBody;
   if (formData) {
     fetchBody = formData;
   } else if (body !== undefined) {
-    fetchBody = isString(body) ? (body as string) : JSON.stringify(body);
+    fetchBody = isString(body) ? body : JSON.stringify(body);
   }
 
   const response = await fetch(url, {

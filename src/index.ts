@@ -107,19 +107,23 @@ export class TinyERPv3 {
    */
   constructor(config: TinyERPConfig) {
     OpenAPI.BASE = 'https://api.tiny.com.br/api/v3';
+    OpenAPI.VERSION = '3.0';
+    OpenAPI.WITH_CREDENTIALS = false;
+    OpenAPI.CREDENTIALS = 'omit';
+    OpenAPI.USERNAME = undefined;
+    OpenAPI.PASSWORD = undefined;
+    OpenAPI.HEADERS = undefined;
+    OpenAPI.ENCODE_PATH = undefined;
 
     // Rate limiter setup — disabled when rateLimit === 0.
-    if (config.rateLimit !== 0) {
+    if ('rateLimit' in config && config.rateLimit !== 0) {
       OpenAPI.RATE_LIMITER = new RateLimiter(config.rateLimit ?? 120);
     }
 
     // Token resolver — plain token or OAuth auto-refresh.
-    if (config.oauth && config.tokenSet) {
+    if ('oauth' in config && config.oauth && 'tokenSet' in config && config.tokenSet) {
       const oauthClient = new TinyOAuth(config.oauth);
-      OpenAPI.TOKEN = oauthClient.createTokenResolver(
-        config.tokenSet,
-        config.onTokenRefresh,
-      ) as () => Promise<string>;
+      OpenAPI.TOKEN = oauthClient.createTokenResolver(config.tokenSet, config.onTokenRefresh);
     } else if (config.TOKEN) {
       OpenAPI.TOKEN = config.TOKEN;
     }
