@@ -1,3 +1,9 @@
+# [2.2.1](https://github.com/linkiez/TinyERPv3-SDK/compare/v2.2.0...v2.2.1) (2026-09-21)
+
+### Chores
+
+* corrigir incremento de versão do release após os fixes OAuth e rate limit
+
 # [2.2.0](https://github.com/linkiez/TinyERPv3-SDK/compare/v2.1.0...v2.2.0) (2026-09-21)
 
 
