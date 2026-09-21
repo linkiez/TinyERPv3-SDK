@@ -1,13 +1,27 @@
 import { jest } from '@jest/globals';
-import { RateLimiter } from './RateLimiter';
+import {
+  clearRateLimiterRegistry,
+  getRateLimiterForToken,
+  RateLimiter,
+} from './RateLimiter';
 
 describe('RateLimiter', () => {
   beforeEach(() => {
+    clearRateLimiterRegistry();
     jest.useFakeTimers();
   });
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  it('compartilha o limite entre clientes que usam o mesmo token', () => {
+    expect(getRateLimiterForToken('token-a', 60)).toBe(
+      getRateLimiterForToken('token-a', 60),
+    );
+    expect(getRateLimiterForToken('token-a', 60)).not.toBe(
+      getRateLimiterForToken('token-b', 60),
+    );
   });
 
   it('deve ter limit padrão de 120', () => {
@@ -42,6 +56,21 @@ describe('RateLimiter', () => {
     expect(resolved).toBe(true);
   });
 
+  it('reserva slots para chamadas concorrentes', async () => {
+    const rl = new RateLimiter(1);
+    await rl.waitIfNeeded();
+
+    let resolved = false;
+    const pending = rl.waitIfNeeded().then(() => {
+      resolved = true;
+    });
+
+    expect(resolved).toBe(false);
+    jest.advanceTimersByTime(60_001);
+    await pending;
+    expect(resolved).toBe(true);
+  });
+
   it('updateFromHeaders deve atualizar o limite via x-ratelimit-limit', () => {
     const rl = new RateLimiter(60);
     rl.updateFromHeaders({ 'x-ratelimit-limit': '240' });
@@ -52,6 +81,27 @@ describe('RateLimiter', () => {
     const rl = new RateLimiter(60);
     rl.updateFromHeaders({ 'x-limit-api': '120' });
     expect(rl.limit).toBe(120);
+  });
+
+  it('usa headers da API para limitar até o reset informado', async () => {
+    const rl = new RateLimiter(120);
+    rl.recordRequest(
+      new Headers({
+        'X-RateLimit-Limit': '60',
+        'X-RateLimit-Remaining': '0',
+        'X-RateLimit-Reset': '10',
+      }),
+    );
+
+    let resolved = false;
+    const pending = rl.waitIfNeeded().then(() => {
+      resolved = true;
+    });
+
+    jest.advanceTimersByTime(10_001);
+    await pending;
+    expect(resolved).toBe(true);
+    expect(rl.limit).toBe(60);
   });
 
   it('updateFromHeaders ignora header inválido', () => {

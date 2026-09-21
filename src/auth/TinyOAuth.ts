@@ -107,7 +107,7 @@ export class TinyOAuth {
    * Returns true if the access token is expired (with 60s buffer).
    */
   isExpired(tokenSet: TinyTokenSet): boolean {
-    if (!tokenSet.expires_at) return false;
+    if (tokenSet.expires_at === undefined) return false;
     return Date.now() >= tokenSet.expires_at - 60_000;
   }
 
@@ -144,7 +144,12 @@ export class TinyOAuth {
       const text = await response.text().catch(() => '');
       throw new Error(`TinyOAuth token request failed: ${response.status} ${text}`);
     }
-    const data = (await response.json()) as Record<string, unknown>;
+    const responseText = await response.text();
+    if (!responseText.trim()) {
+      throw new Error('TinyOAuth token request returned an empty response');
+    }
+
+    const data = JSON.parse(responseText) as Record<string, unknown>;
     return this.parseTokenResponse(data);
   }
 

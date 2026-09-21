@@ -315,9 +315,12 @@ export const request = <T>(
   options: ApiRequestOptions,
 ): CancelablePromise<T> => {
   return new CancelablePromise(async (resolve, reject, onCancel) => {
+    let rateLimitReserved = false;
+
     try {
       if (config.RATE_LIMITER) {
         await config.RATE_LIMITER.waitIfNeeded();
+        rateLimitReserved = true;
       }
 
       const url = getUrl(config, options);
@@ -338,6 +341,7 @@ export const request = <T>(
 
         if (config.RATE_LIMITER) {
           config.RATE_LIMITER.recordRequest(response.headers);
+          rateLimitReserved = false;
         }
 
         const responseBody = getResponseBody(response);
@@ -356,6 +360,9 @@ export const request = <T>(
         resolve(result.body);
       }
     } catch (error) {
+      if (config.RATE_LIMITER && rateLimitReserved) {
+        config.RATE_LIMITER.releaseReservation();
+      }
       reject(error);
     }
   });

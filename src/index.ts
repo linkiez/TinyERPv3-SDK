@@ -4,7 +4,7 @@ export * from './models';
 export * from './services';
 
 import { OpenAPI } from './core/OpenAPI';
-import { RateLimiter } from './core/RateLimiter';
+import { getRateLimiterForToken } from './core/RateLimiter';
 import { TinyOAuth, type TinyOAuthConfig, type TinyTokenSet } from './auth/TinyOAuth';
 import { CategoriasDeReceitaEDespesaService } from './services/CategoriasDeReceitaEDespesaService';
 import { CategoriasService } from './services/CategoriasService';
@@ -117,7 +117,13 @@ export class TinyERPv3 {
 
     // Rate limiter setup — disabled when rateLimit === 0.
     if ('rateLimit' in config && config.rateLimit !== 0) {
-      OpenAPI.RATE_LIMITER = new RateLimiter(config.rateLimit ?? 120);
+      const token =
+        'oauth' in config && config.oauth
+          ? config.tokenSet.access_token
+          : config.TOKEN;
+      if (typeof token === 'string' && token.trim()) {
+        OpenAPI.RATE_LIMITER = getRateLimiterForToken(token, config.rateLimit ?? 120);
+      }
     }
 
     // Token resolver — plain token or OAuth auto-refresh.

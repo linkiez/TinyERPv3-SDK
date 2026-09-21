@@ -1,5 +1,27 @@
 import { jest } from '@jest/globals';
 import { TinyOAuth } from './TinyOAuth';
+
+describe('TinyOAuth', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('reports an empty token response clearly', async () => {
+    jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('', { status: 200 }),
+    );
+
+    const oauth = new TinyOAuth({
+      clientId: 'client-id',
+      clientSecret: 'client-secret',
+      redirectUri: 'https://app.example/callback',
+    });
+
+    await expect(oauth.refreshAccessToken('refresh-token')).rejects.toThrow(
+      'empty response',
+    );
+  });
+});
 import type { TinyTokenSet } from './TinyOAuth';
 
 const baseConfig = {
@@ -94,6 +116,10 @@ describe('TinyOAuth', () => {
   describe('isExpired', () => {
     it('retorna false quando expires_at indefinido', () => {
       expect(oauth.isExpired({ access_token: 'tok' })).toBe(false);
+    });
+
+    it('retorna true quando expires_at zero sinaliza credencial legada', () => {
+      expect(oauth.isExpired({ access_token: 'tok', expires_at: 0 })).toBe(true);
     });
 
     it('retorna true quando expirado (com buffer 60s)', () => {
