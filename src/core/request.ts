@@ -232,7 +232,10 @@ export const sendRequest = async <T>(
   } else {
     const contentType = response.headers.get('content-type') ?? '';
     if (contentType.includes('application/json')) {
-      data = (await response.json()) as T;
+      const responseText = await response.text();
+      data = responseText.trim()
+        ? (JSON.parse(responseText) as T)
+        : (undefined as unknown as T);
     } else {
       data = (await response.text()) as unknown as T;
     }
