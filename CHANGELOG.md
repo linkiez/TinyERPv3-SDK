@@ -1,3 +1,17 @@
+# [2.2.0](https://github.com/linkiez/TinyERPv3-SDK/compare/v2.1.0...v2.2.0) (2026-09-21)
+
+
+### Bug Fixes
+
+* aceitar respostas JSON vazias ([89866eb](https://github.com/linkiez/TinyERPv3-SDK/commit/89866eba23cef386032ea67cbab09af5d6034a51))
+* corrigir base da API TinyERP ([e170821](https://github.com/linkiez/TinyERPv3-SDK/commit/e1708212eb0276e77db17c4ca05156514f130abd))
+* corrigir renovacao OAuth e rate limit ([e816d97](https://github.com/linkiez/TinyERPv3-SDK/commit/e816d97471229676a49b7c6f7a682a644f3fb9c6))
+
+
+### Features
+
+* **auth:** adicionar OAuth 2.0 e rate limiter nativos ao SDK ([d5f00ac](https://github.com/linkiez/TinyERPv3-SDK/commit/d5f00ac174ba744da0cd517d18e5987742928cd1))
+
 # [2.2.0](https://github.com/linkiez/TinyERPv3-SDK/compare/v2.1.0...v2.2.0) (2026-06-18)
 
 ### Features
