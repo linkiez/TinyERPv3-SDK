@@ -106,7 +106,7 @@ export class TinyERPv3 {
    * @param config - Token config, OAuth config, or rate limit options.
    */
   constructor(config: TinyERPConfig) {
-    OpenAPI.BASE = 'https://api.tiny.com.br/api/v3';
+    OpenAPI.BASE = 'https://api.tiny.com.br/public-api/v3';
     OpenAPI.VERSION = '3.0';
     OpenAPI.WITH_CREDENTIALS = false;
     OpenAPI.CREDENTIALS = 'omit';

@@ -3,14 +3,14 @@
   "version": "2.2.0",
   "description": "SDK for TinyERP v3 API",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/bundle.js",
   "types": "./dist/index.d.ts",
-  "module": "./dist/index.js",
+  "module": "./dist/bundle.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "import": "./dist/bundle.js",
+      "default": "./dist/bundle.js"
     }
   },
   "scripts": {

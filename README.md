@@ -15,9 +15,20 @@ Todos os direitos sobre as marcas "TinyERP" e "Olist" pertencem aos seus respect
 ## 🚀 Início Rápido
 
 ```typescript
-import { TinyERP } from '@integrations/tinyerp-v3';
+import { TinyERPv3 } from '@linkiez/tinyerpv3-sdk';
 
-const tiny = new TinyERP({ TOKEN: 'seu_client_secret' });
+const tiny = new TinyERPv3({
+  oauth: {
+    clientId: process.env.TINY_CLIENT_ID!,
+    clientSecret: process.env.TINY_CLIENT_SECRET!,
+    redirectUri: process.env.TINY_REDIRECT_URI!,
+    scope: 'openid',
+  },
+  tokenSet: {
+    access_token: process.env.TINY_ACCESS_TOKEN!,
+    refresh_token: process.env.TINY_REFRESH_TOKEN,
+  },
+});
 
 // Listar produtos
 const produtos = await tiny.produtos.listarProdutos({ limit: 10 });
@@ -56,7 +67,7 @@ const nota = await tiny.notas.gerarNotaFiscalPedido({ idVenda: 123 });
 ## 🔧 Módulos Disponíveis
 
 ```typescript
-const tiny = new TinyERP({ TOKEN: 'token' });
+const tiny = new TinyERPv3({ TOKEN: process.env.TINY_ACCESS_TOKEN! });
 
 // Gestão de Produtos e Estoque
 tiny.produtos; // Produtos e variações
@@ -146,9 +157,10 @@ await tiny.notas.autorizarNotaFiscal({
 ## ⚠️ Tratamento de Erros
 
 ```typescript
-import { TinyERP, ApiError } from '@integrations/tinyerp-v3';
+import { ApiError, TinyERPv3 } from '@linkiez/tinyerpv3-sdk';
 
 try {
+  const tiny = new TinyERPv3({ TOKEN: process.env.TINY_ACCESS_TOKEN! });
   const produto = await tiny.produtos.obterProduto({ id: 123 });
 } catch (error) {
   if (error instanceof ApiError) {
@@ -172,7 +184,7 @@ try {
 
 ```typescript
 // ✅ Correto
-const tiny = new TinyERP({
+const tiny = new TinyERPv3({
   TOKEN: process.env.TINY_ERP_TOKEN!,
 });
 
