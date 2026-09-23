@@ -43,7 +43,14 @@ export const getQueryString = (params: Record<string, unknown>): string => {
   const qs: string[] = [];
 
   const append = (key: string, value: unknown) => {
-    qs.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean' ||
+      typeof value === 'bigint'
+    ) {
+      qs.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+    }
   };
 
   const process = (key: string, value: unknown) => {
@@ -78,9 +85,18 @@ const getUrl = (config: OpenAPIConfig, options: ApiRequestOptions): string => {
 
   const path = options.url
     .replace('{api-version}', config.VERSION)
-    .replace(/{(.*?)}/g, (substring: string, group: string) => {
-      if (Object.prototype.hasOwnProperty.call(options.path ?? {}, group)) {
-        return encoder(String((options.path as Record<string, unknown>)[group]));
+    .replace(/{([^{}]*)}/g, (substring: string, group: string) => {
+      const pathParams = options.path ?? {};
+      if (Object.hasOwn(pathParams, group)) {
+        const value = pathParams[group];
+        if (
+          typeof value === 'string' ||
+          typeof value === 'number' ||
+          typeof value === 'boolean' ||
+          typeof value === 'bigint'
+        ) {
+          return encoder(String(value));
+        }
       }
       return substring;
     });
@@ -158,7 +174,8 @@ export const getHeaders = async (
   }
 
   if (isStringWithValue(username) && isStringWithValue(password)) {
-    headers['Authorization'] = `Basic ${base64(`${username}:${password}`)}`;
+    const credentials = `${username}:${password}`;
+    headers['Authorization'] = `Basic ${base64(credentials)}`;
   }
 
   if (options.body !== undefined) {
@@ -233,9 +250,7 @@ export const sendRequest = async <T>(
     const contentType = response.headers.get('content-type') ?? '';
     if (contentType.includes('application/json')) {
       const responseText = await response.text();
-      data = responseText.trim()
-        ? (JSON.parse(responseText) as T)
-        : (undefined as unknown as T);
+      data = responseText.trim() ? (JSON.parse(responseText) as T) : (undefined as unknown as T);
     } else {
       data = (await response.text()) as unknown as T;
     }
