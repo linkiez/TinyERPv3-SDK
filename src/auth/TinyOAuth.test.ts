@@ -7,9 +7,7 @@ describe('TinyOAuth', () => {
   });
 
   it('reports an empty token response clearly', async () => {
-    jest.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('', { status: 200 }),
-    );
+    jest.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('', { status: 200 }));
 
     const oauth = new TinyOAuth({
       clientId: 'client-id',
@@ -17,9 +15,7 @@ describe('TinyOAuth', () => {
       redirectUri: 'https://app.example/callback',
     });
 
-    await expect(oauth.refreshAccessToken('refresh-token')).rejects.toThrow(
-      'empty response',
-    );
+    await expect(oauth.refreshAccessToken('refresh-token')).rejects.toThrow('empty response');
   });
 });
 import type { TinyTokenSet } from './TinyOAuth';

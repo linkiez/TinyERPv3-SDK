@@ -117,10 +117,7 @@ export class TinyERPv3 {
 
     // Rate limiter setup — disabled when rateLimit === 0.
     if ('rateLimit' in config && config.rateLimit !== 0) {
-      const token =
-        'oauth' in config && config.oauth
-          ? config.tokenSet.access_token
-          : config.TOKEN;
+      const token = 'oauth' in config && config.oauth ? config.tokenSet.access_token : config.TOKEN;
       if (typeof token === 'string' && token.trim()) {
         OpenAPI.RATE_LIMITER = getRateLimiterForToken(token, config.rateLimit ?? 120);
       }

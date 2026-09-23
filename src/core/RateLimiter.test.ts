@@ -1,9 +1,5 @@
 import { jest } from '@jest/globals';
-import {
-  clearRateLimiterRegistry,
-  getRateLimiterForToken,
-  RateLimiter,
-} from './RateLimiter';
+import { clearRateLimiterRegistry, getRateLimiterForToken, RateLimiter } from './RateLimiter';
 
 describe('RateLimiter', () => {
   beforeEach(() => {
@@ -16,12 +12,8 @@ describe('RateLimiter', () => {
   });
 
   it('compartilha o limite entre clientes que usam o mesmo token', () => {
-    expect(getRateLimiterForToken('token-a', 60)).toBe(
-      getRateLimiterForToken('token-a', 60),
-    );
-    expect(getRateLimiterForToken('token-a', 60)).not.toBe(
-      getRateLimiterForToken('token-b', 60),
-    );
+    expect(getRateLimiterForToken('token-a', 60)).toBe(getRateLimiterForToken('token-a', 60));
+    expect(getRateLimiterForToken('token-a', 60)).not.toBe(getRateLimiterForToken('token-b', 60));
   });
 
   it('deve ter limit padrão de 120', () => {

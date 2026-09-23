@@ -1,28 +1,28 @@
-import { jest } from "@jest/globals";
-import { OpenAPI } from "./OpenAPI";
-import type { OnCancel } from "./CancelablePromise";
-import { sendRequest } from "./request";
+import { jest } from '@jest/globals';
+import { OpenAPI } from './OpenAPI';
+import type { OnCancel } from './CancelablePromise';
+import { sendRequest } from './request';
 
-describe("sendRequest", () => {
+describe('sendRequest', () => {
   const onCancel = (() => undefined) as unknown as OnCancel;
 
   beforeEach(() => {
     jest.restoreAllMocks();
-    OpenAPI.BASE = "https://api.tiny.com.br/public-api/v3";
+    OpenAPI.BASE = 'https://api.tiny.com.br/public-api/v3';
   });
 
-  it("aceita resposta JSON vazia", async () => {
-    jest.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response("", {
+  it('aceita resposta JSON vazia', async () => {
+    jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('', {
         status: 200,
-        headers: { "content-type": "application/json" },
+        headers: { 'content-type': 'application/json' },
       }),
     );
 
     const result = await sendRequest(
       OpenAPI,
-      { method: "GET", url: "/contas-pagar" },
-      "https://api.tiny.com.br/public-api/v3/contas-pagar",
+      { method: 'GET', url: '/contas-pagar' },
+      'https://api.tiny.com.br/public-api/v3/contas-pagar',
       undefined,
       undefined,
       {},
