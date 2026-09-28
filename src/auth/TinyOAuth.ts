@@ -124,11 +124,24 @@ export class TinyOAuth {
     onRefresh?: (updated: TinyTokenSet) => void,
   ): () => Promise<string> {
     let current = tokenSet;
+    let refreshPromise: Promise<TinyTokenSet> | undefined;
 
     return async (): Promise<string> => {
       if (this.isExpired(current) && current.refresh_token) {
-        current = await this.refreshAccessToken(current.refresh_token);
-        onRefresh?.(current);
+        refreshPromise ??= this.refreshAccessToken(current.refresh_token)
+          .then((updated) => {
+            current = {
+              ...current,
+              ...updated,
+              refresh_token: updated.refresh_token ?? current.refresh_token,
+            };
+            onRefresh?.(current);
+            return current;
+          })
+          .finally(() => {
+            refreshPromise = undefined;
+          });
+        current = await refreshPromise;
       }
       return current.access_token;
     };

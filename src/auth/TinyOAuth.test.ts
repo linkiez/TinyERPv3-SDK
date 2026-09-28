@@ -157,5 +157,61 @@ describe('TinyOAuth', () => {
         expect.objectContaining({ access_token: 'refreshed' }),
       );
     });
+
+    it('preserva o refresh token anterior quando a resposta não o devolve', async () => {
+      jest.useFakeTimers({ now: Date.now() });
+      const fetchMock = jest
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ access_token: 'refreshed-1', expires_in: 14400 }),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ access_token: 'refreshed-2', expires_in: 14400 }),
+        } as Response);
+      const resolver = oauth.createTokenResolver({
+        access_token: 'old',
+        refresh_token: 'original-rt',
+        expires_at: Date.now() - 1,
+      });
+
+      await expect(resolver()).resolves.toBe('refreshed-1');
+      jest.setSystemTime(Date.now() + 14_400_001);
+      await expect(resolver()).resolves.toBe('refreshed-2');
+
+      const secondBody = fetchMock.mock.calls[1][1]?.body as URLSearchParams;
+      expect(secondBody.get('refresh_token')).toBe('original-rt');
+      jest.useRealTimers();
+    });
+
+    it('compartilha uma única renovação entre chamadas concorrentes', async () => {
+      let releaseRefresh!: () => void;
+      const refreshStarted = new Promise<void>((resolve) => {
+        releaseRefresh = resolve;
+      });
+      const fetchMock = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+        await refreshStarted;
+        return {
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ access_token: 'refreshed', expires_in: 14400 }),
+        } as Response;
+      });
+      const resolver = oauth.createTokenResolver({
+        access_token: 'old',
+        refresh_token: 'original-rt',
+        expires_at: Date.now() - 1,
+      });
+
+      const first = resolver();
+      const second = resolver();
+      releaseRefresh();
+
+      await expect(Promise.all([first, second])).resolves.toEqual(['refreshed', 'refreshed']);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
   });
 });
