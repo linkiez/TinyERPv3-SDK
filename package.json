@@ -40,6 +40,10 @@
     "type": "git",
     "url": "git+https://github.com/linkiez/TinyERPv3-SDK.git"
   },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
+  },
   "homepage": "https://github.com/linkiez/TinyERPv3-SDK#readme",
   "bugs": {
     "url": "https://github.com/linkiez/TinyERPv3-SDK/issues"
